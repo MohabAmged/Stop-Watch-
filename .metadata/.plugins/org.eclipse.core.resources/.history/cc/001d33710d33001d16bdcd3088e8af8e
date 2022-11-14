@@ -1,0 +1,247 @@
+/*
+ * Main.c
+ *
+ *  Created on: 12 Sept 2022
+ *      Author: marwa
+ */
+
+#include<avr/io.h>
+#include <avr/interrupt.h>
+
+// Init The Time Count Array Every Index to one 7-Segment
+unsigned char Global_TimeCount[6]={0,0,0,0,0,0};
+
+// Init The Time Count ArrayIndex
+unsigned char Digit_Index=0;
+
+ISR(INT0_vect)
+{
+
+	// Resetting the Values oF the Counters to zero
+	while(Digit_Index<6)
+	{
+		Global_TimeCount[Digit_Index]=0;
+		Digit_Index++;
+
+	}
+
+
+
+
+}
+
+ISR(INT1_vect)
+{
+
+	// Stopping The Timer Clock To Freeze Time
+	TCCR1B&=~(1<<CS12) & ~(1<<CS11) & ~(1<<CS10);
+
+
+
+}
+
+ISR(INT2_vect)
+{
+
+
+
+	// Start The Timer Clock Again With The Same Configurations as Init Function
+	// To Resume Counting
+	TCCR1B=(1<<CS10)|(1<<CS11);
+
+
+
+
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+
+	Global_TimeCount[0]++;
+
+}
+
+
+void Clock_Check(void)
+{
+	// Checking if This Digit Exceeded it's limit
+			if(Global_TimeCount[0]>9)
+			{
+				// Reseting This Digit + Increment the Following bit .
+				Global_TimeCount[0]=0;
+				Global_TimeCount[1]++;
+			}
+			// Checking if This Digit Exceeded it's limit
+			if(Global_TimeCount[1]>5)
+			{
+				// Reseting This Digit + Increment the Following bit .
+				Global_TimeCount[1]=0;
+				Global_TimeCount[2]++;
+
+			}
+			// Checking if This Digit Exceeded it's limit
+			if(Global_TimeCount[2]>9)
+			{
+				// Reseting This Digit + Increment the Following bit .
+				Global_TimeCount[2]=0;
+				Global_TimeCount[3]++;
+			}
+			// Checking if This Digit Exceeded it's limitt
+			if(Global_TimeCount[3]>5)
+			{
+				// Reseting This Digit + Increment the Following bit .
+				Global_TimeCount[3]=0;
+				Global_TimeCount[4]++;
+
+			}
+			// Checking if This Digit Exceeded it's limit
+			if(Global_TimeCount[4]>9)
+			{
+				// Reseting This Digit + Increment the Following bit .
+				Global_TimeCount[4]=0;
+				Global_TimeCount[5]++;
+			}
+			// Checking if the last Digit Exceeded it's limit
+
+			if(Global_TimeCount[5]>2 && Global_TimeCount[4]>4)
+			{
+				// Reseting The clock to restart counting
+				Global_TimeCount[5]=0;
+				Global_TimeCount[4]=0;
+				Global_TimeCount[3]=0;
+				Global_TimeCount[2]=0;
+				Global_TimeCount[1]=0;
+				Global_TimeCount[0]=0;
+
+
+			}
+
+
+
+
+
+
+}
+
+
+void Timer1_Init_CTCMode(unsigned short Compare_Value)
+{
+
+	// Setting Timer1 in CTC Mood With Control Register A
+	TCCR1A=(1<<COM1A0)|(1<<COM1A1)|(1<<FOC1A)|(1<<WGM12);
+	// Setting Timer1 Frequency With Control Register B
+	// Setting The Prescaler to 64 So it Will Be A Second Pass Every 15625 Count
+	TCCR1B=(1<<CS10)|(1<<CS11);
+
+	// Setting The Initial Value of the Timer to Zero
+	TCNT1=0;
+	// Setting The Compare Value of the Timer to Compare_Value
+	OCR1A=Compare_Value;
+    // Setting The Interrupt Module Enable
+	TIMSK|=(1<<OCIE1A);
+
+}
+
+void Interrupt0_Enable(void)
+{
+
+	// Enabling Interrupt 0 With Falling Edge Sense
+	MCUCR|=(1<<ISC01);
+
+	// Interrupt 0 Interrupt Enable
+	GICR|=(1<<INT0);
+}
+
+void Interrupt1_Enable(void)
+{
+
+
+	// Enabling Interrupt 1 With Rising Edge Sense
+
+	MCUCR|=(1<<ISC10)|(1<<ISC11);
+
+	// Interrupt 1 Interrupt Enable
+	GICR|=(1<<INT1);
+
+
+}
+
+void Interrupt2_Enable(void)
+{
+
+	// Enabling Interrupt 2 With Falling Edge Sense
+	MCUCSR&=~(1<<ISC2);
+
+   // Interrupt 2 Interrupt Enable
+	GICR|=(1<<INT2);
+
+}
+
+int main(void)
+{
+    // Compare Value Variable
+	unsigned short Compare_Value=15625;
+	// Pins Init
+	DDRA=0x3f;            // Control Pins for the 7 Segmants as outputs (first 6 pins)
+	PORTA=0;              // Control Pins for the 7 Segmants as outputs =0
+	DDRC=0x0f;            // Data Pins for the 7 Segmants as outputs (first 4 pins)
+	PORTC=0;              // Data Pins for the 7 Segmants as outputs =0
+	DDRD&=~(1<<2);        // INT0 Pin Defined As Input
+	PORTD|=(1<<2);        // INT0 Pin Defined As Input With Internal PUll Up
+
+	DDRD&=~(1<<3);        // INT1 Pin Defined As Input
+    PORTD&=~(1<<3);       // INT1 Pin Defined As Input With External PUll Down
+
+    DDRB&=~(1<<2);        // INT2 Pin Defined As Input
+	PORTB|=(1<<2);        // INT2 Pin Defined As Input With Internal PUll Up
+
+	// Setting  Global Interrupt  Enable
+	SREG|=(1<<7);
+
+	// Init Function OF Timer 1 With Value 15625 To Give AN Interrupt Every Second
+	Timer1_Init_CTCMode(Compare_Value);
+
+	// Init Function OF Interrupt 0
+	Interrupt0_Enable();
+
+	// Init Function OF Interrupt 1
+	Interrupt1_Enable();
+
+	// Init Function OF Interrupt 2
+	Interrupt2_Enable();
+
+
+
+	while(1)
+	{
+
+	// Displaying Digit 1
+      PORTA=32;
+      PORTC=Global_TimeCount[0];
+      Clock_Check();
+    // Displaying Digit 2
+      PORTA=16;
+      PORTC=Global_TimeCount[1];
+      Clock_Check();
+    // Displaying Digit 3
+      PORTA=8;
+      PORTC=Global_TimeCount[2];
+      Clock_Check();
+    // Displaying Digit 4
+      PORTA=4;
+      PORTC=Global_TimeCount[3];
+      Clock_Check();
+    // Displaying Digit 5
+      PORTA=2;
+      PORTC=Global_TimeCount[4];
+      Clock_Check();
+    // Displaying Digit 6
+      PORTA=1;
+      PORTC=Global_TimeCount[5];
+      Clock_Check();
+
+	}
+
+
+	return 0;
+}

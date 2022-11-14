@@ -1,0 +1,72 @@
+/*
+ * Main.c
+ *
+ *  Created on: 12 Sept 2022
+ *      Author: marwa
+ */
+
+#include<avr/io.h>
+
+
+void Timer1_Init_CTCMode(void)
+{
+
+
+
+
+
+
+
+
+}
+
+int main(void)
+{
+
+	// Pins Init
+	DDRA=0x3f;            // Control Pins for the 7 Segmants as outputs (first 6 pins)
+	PORTA=0;              // Control Pins for the 7 Segmants as outputs =0
+	DDRC=0x0f;            // Data Pins for the 7 Segmants as outputs (first 4 pins)
+	PORTC=0;              // Data Pins for the 7 Segmants as outputs =0
+	DDRD&=~(1<<2);        // INT0 Pin Defined As Input
+	PORTD|=(1<<2);        // INT0 Pin Defined As Input With Internal PUll Up
+
+	DDRD&=~(1<<3);        // INT1 Pin Defined As Input
+    PORTD&=~(1<<3);       // INT1 Pin Defined As Input With External PUll Down
+
+    DDRB&=~(1<<2);        // INT2 Pin Defined As Input
+	PORTB|=(1<<2);        // INT2 Pin Defined As Input With Internal PUll Up
+
+
+
+	while(1)
+	{
+
+
+
+
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	return 0;
+}
